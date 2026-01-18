@@ -16,6 +16,7 @@ Docs: https://docs.clawd.bot
 ### Fixes
 - Tools: return a companion-app-required message when node exec is requested with no paired node.
 - Streaming: emit assistant deltas for OpenAI-compatible SSE chunks. (#1147) — thanks @alauppe.
+- Tests: clean up gateway env stubs and assert config.apply sentinel writes. (#1148) — thanks @TSavo.
 
 ## 2026.1.18-2
 

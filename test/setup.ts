@@ -7,4 +7,5 @@ process.on("exit", cleanup);
 afterEach(() => {
   // Guard against leaked fake timers across test files/workers.
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
