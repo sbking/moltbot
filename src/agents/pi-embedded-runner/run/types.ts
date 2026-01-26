@@ -46,6 +46,11 @@ export type EmbeddedRunAttemptParams = {
   clientTools?: ClientToolDefinition[];
   /** Disable built-in tools for this run (LLM-only mode). */
   disableTools?: boolean;
+  /**
+   * Pre-seed the agent session with these messages instead of loading from the session file.
+   * Used for forking conversation context to a new isolated agent run.
+   */
+  initialMessages?: AgentMessage[];
   provider: string;
   modelId: string;
   model: Model<Api>;

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import { agentCommand } from "../../commands/agent.js";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import { loadConfig } from "../../config/config.js";
@@ -85,6 +86,14 @@ export const agentHandlers: GatewayRequestHandlers = {
       timeout?: number;
       label?: string;
       spawnedBy?: string;
+      /**
+       * Pre-seed the agent session with these messages instead of loading from session file.
+       * Used for forking conversation context to a new isolated agent run.
+       */
+      initialMessages?: Array<{
+        role: string;
+        content: unknown;
+      }>;
     };
     const cfg = loadConfig();
     const idem = request.idempotencyKey;
@@ -377,6 +386,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         runId,
         lane: request.lane,
         extraSystemPrompt: request.extraSystemPrompt,
+        initialMessages: request.initialMessages as AgentMessage[] | undefined,
       },
       defaultRuntime,
       context.deps,

@@ -124,6 +124,7 @@ import { startWebLoginWithQr, waitForWebLogin } from "../../web/login-qr.js";
 import { sendMessageWhatsApp, sendPollWhatsApp } from "../../web/outbound.js";
 import { registerMemoryCli } from "../../cli/memory-cli.js";
 import { formatNativeDependencyHint } from "./native-deps.js";
+import { runPluginAgentTurn } from "./agent.js";
 import { textToSpeechTelephony } from "../../tts/tts.js";
 import {
   listLineAccountIds,
@@ -353,7 +354,10 @@ export function createPluginRuntime(): PluginRuntime {
     state: {
       resolveStateDir,
     },
+    agent: {
+      run: runPluginAgentTurn,
+    },
   };
 }
 
-export type { PluginRuntime } from "./types.js";
+export type { PluginRuntime, PluginAgentRunParams, PluginAgentRunResult } from "./types.js";

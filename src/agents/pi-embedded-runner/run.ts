@@ -323,6 +323,7 @@ export async function runEmbeddedPiAgent(
             skillsSnapshot: params.skillsSnapshot,
             prompt,
             images: params.images,
+            initialMessages: params.initialMessages,
             disableTools: params.disableTools,
             provider,
             modelId,
