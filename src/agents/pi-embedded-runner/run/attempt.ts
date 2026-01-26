@@ -819,7 +819,7 @@ export async function runEmbeddedAttempt(
                 success: !aborted && !promptError,
                 error: promptError ? describeUnknownError(promptError) : undefined,
                 durationMs: Date.now() - promptStartedAt,
-                systemPrompt: systemPrompt?.toString(),
+                systemPrompt: appendPrompt,
                 tools: tools,
               },
               {
