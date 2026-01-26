@@ -145,26 +145,53 @@ export default function compactionSafeguardExtension(api: ExtensionAPI): void {
     const toolFailureSection = formatToolFailuresSection(toolFailures);
     const fallbackSummary = `${FALLBACK_SUMMARY}${toolFailureSection}${fileOpsSummary}`;
 
-    const model = ctx.model;
+    // ctx.model is often undefined in embedded mode (pi-coding-agent SDK bug:
+    // createAgentSession doesn't call extensionRunner.initialize()).
+    // Workaround: scan session entries for most recent model_change, then lookup.
+    let model = ctx.model;
     if (!model) {
+      const entries = ctx.sessionManager.getEntries();
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const entry = entries[i];
+        if (entry.type === "model_change") {
+          const mcEntry = entry as { provider: string; modelId: string };
+          model = ctx.modelRegistry.find(mcEntry.provider, mcEntry.modelId);
+          break;
+        }
+        // Also check assistant messages which store model info
+        if (
+          entry.type === "message" &&
+          (entry as { message?: { model?: string; provider?: string } }).message?.model
+        ) {
+          const msg = (entry as { message: { model: string; provider: string } }).message;
+          model = ctx.modelRegistry.find(msg.provider, msg.model);
+          break;
+        }
+      }
+    }
+    if (!model) {
+      console.warn("[compaction-safeguard] No model in context or session, using fallback summary");
       return {
         compaction: {
-          summary: fallbackSummary,
+          summary: `[DEBUG: no model in ctx] ${fallbackSummary}`,
           firstKeptEntryId: preparation.firstKeptEntryId,
           tokensBefore: preparation.tokensBefore,
-          details: { readFiles, modifiedFiles },
+          details: { readFiles, modifiedFiles, debugReason: "no-model" },
         },
       };
     }
 
     const apiKey = await ctx.modelRegistry.getApiKey(model);
     if (!apiKey) {
+      console.warn(
+        `[compaction-safeguard] No API key for model "${model.id}", using fallback summary`,
+      );
       return {
         compaction: {
-          summary: fallbackSummary,
+          summary: `[DEBUG: no API key for ${model.id}] ${fallbackSummary}`,
           firstKeptEntryId: preparation.firstKeptEntryId,
           tokensBefore: preparation.tokensBefore,
-          details: { readFiles, modifiedFiles },
+          details: { readFiles, modifiedFiles, debugReason: "no-api-key", model: model.id },
         },
       };
     }
