@@ -815,6 +815,8 @@ export async function runEmbeddedAttempt(
                 success: !aborted && !promptError,
                 error: promptError ? describeUnknownError(promptError) : undefined,
                 durationMs: Date.now() - promptStartedAt,
+                systemPrompt: systemPrompt?.toString(),
+                tools: tools,
               },
               {
                 agentId: params.sessionKey?.split(":")[0] ?? "main",
