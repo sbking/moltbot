@@ -1,4 +1,7 @@
 import type { LogLevel } from "../../logging/levels.js";
+import type { runPluginAgentTurn, PluginAgentRunParams, PluginAgentRunResult } from "./agent.js";
+
+type RunPluginAgentTurn = typeof runPluginAgentTurn;
 
 type ShouldLogVerbose = typeof import("../../globals.js").shouldLogVerbose;
 type DispatchReplyWithBufferedBlockDispatcher =
@@ -358,4 +361,22 @@ export type PluginRuntime = {
   state: {
     resolveStateDir: ResolveStateDir;
   };
+  /**
+   * Agent namespace - enables plugins to trigger agent runs.
+   *
+   * Key use case: forking conversation context to a specialized agent run
+   * (e.g., memory processing at agent_end hook) while preserving cache hits.
+   */
+  agent: {
+    /**
+     * Trigger an agent run from within a plugin.
+     *
+     * Example: A memory processing agent that receives the full conversation
+     * context at agent_end and performs memory extraction/updates.
+     */
+    run: RunPluginAgentTurn;
+  };
 };
+
+// Re-export types for plugin authors
+export type { PluginAgentRunParams, PluginAgentRunResult };

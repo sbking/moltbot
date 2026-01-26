@@ -1,3 +1,4 @@
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ImageContent } from "@mariozechner/pi-ai";
 import type { ReasoningLevel, ThinkLevel, VerboseLevel } from "../../../auto-reply/thinking.js";
 import type { MoltbotConfig } from "../../../config/config.js";
@@ -58,6 +59,13 @@ export type RunEmbeddedPiAgentParams = {
   clientTools?: ClientToolDefinition[];
   /** Disable built-in tools for this run (LLM-only mode). */
   disableTools?: boolean;
+  /**
+   * Pre-seed the agent session with these messages instead of loading from the session file.
+   * Used for forking conversation context to a new isolated agent run.
+   * When provided, these messages are used directly via agent.replaceMessages(),
+   * preserving cache hits on shared message prefixes.
+   */
+  initialMessages?: AgentMessage[];
   provider?: string;
   model?: string;
   authProfileId?: string;

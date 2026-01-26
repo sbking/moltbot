@@ -515,29 +515,40 @@ export async function runEmbeddedAttempt(
       }
 
       try {
-        const prior = await sanitizeSessionHistory({
-          messages: activeSession.messages,
-          modelApi: params.model.api,
-          modelId: params.modelId,
-          provider: params.provider,
-          sessionManager,
-          sessionId: params.sessionId,
-          policy: transcriptPolicy,
-        });
-        cacheTrace?.recordStage("session:sanitized", { messages: prior });
-        const validatedGemini = transcriptPolicy.validateGeminiTurns
-          ? validateGeminiTurns(prior)
-          : prior;
-        const validated = transcriptPolicy.validateAnthropicTurns
-          ? validateAnthropicTurns(validatedGemini)
-          : validatedGemini;
-        const limited = limitHistoryTurns(
-          validated,
-          getDmHistoryLimitFromSessionKey(params.sessionKey, params.config),
-        );
-        cacheTrace?.recordStage("session:limited", { messages: limited });
-        if (limited.length > 0) {
-          activeSession.agent.replaceMessages(limited);
+        // If initialMessages is provided, use those directly instead of loading from session.
+        // This enables forking conversation context to a new isolated agent run while
+        // preserving cache hits on the shared message prefix.
+        if (params.initialMessages && params.initialMessages.length > 0) {
+          cacheTrace?.recordStage("session:initialMessages", {
+            messages: params.initialMessages,
+            note: "using provided initialMessages instead of session history",
+          });
+          activeSession.agent.replaceMessages(params.initialMessages);
+        } else {
+          const prior = await sanitizeSessionHistory({
+            messages: activeSession.messages,
+            modelApi: params.model.api,
+            modelId: params.modelId,
+            provider: params.provider,
+            sessionManager,
+            sessionId: params.sessionId,
+            policy: transcriptPolicy,
+          });
+          cacheTrace?.recordStage("session:sanitized", { messages: prior });
+          const validatedGemini = transcriptPolicy.validateGeminiTurns
+            ? validateGeminiTurns(prior)
+            : prior;
+          const validated = transcriptPolicy.validateAnthropicTurns
+            ? validateAnthropicTurns(validatedGemini)
+            : validatedGemini;
+          const limited = limitHistoryTurns(
+            validated,
+            getDmHistoryLimitFromSessionKey(params.sessionKey, params.config),
+          );
+          cacheTrace?.recordStage("session:limited", { messages: limited });
+          if (limited.length > 0) {
+            activeSession.agent.replaceMessages(limited);
+          }
         }
       } catch (err) {
         sessionManager.flushPendingToolResults?.();

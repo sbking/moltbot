@@ -12,6 +12,7 @@ import { resolveUserPath } from "../utils.js";
 
 export type CacheTraceStage =
   | "session:loaded"
+  | "session:initialMessages"
   | "session:sanitized"
   | "session:limited"
   | "prompt:before"

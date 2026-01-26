@@ -1,3 +1,4 @@
+import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { ClientToolDefinition } from "../../agents/pi-embedded-runner/run/params.js";
 import type { ChannelOutboundTargetMode } from "../../channels/plugins/types.js";
 
@@ -74,4 +75,9 @@ export type AgentCommandOpts = {
   extraSystemPrompt?: string;
   /** Per-call stream param overrides (best-effort). */
   streamParams?: AgentStreamParams;
+  /**
+   * Pre-seed the agent session with these messages instead of loading from the session file.
+   * Used for forking conversation context to a new isolated agent run.
+   */
+  initialMessages?: AgentMessage[];
 };
