@@ -5,12 +5,21 @@ import type {
 } from "@mariozechner/pi-agent-core";
 import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
 import type { ClientToolDefinition } from "./pi-embedded-runner/run/params.js";
-import { logDebug, logError } from "../logger.js";
+import { logDebug, logError, logWarn } from "../logger.js";
 import { normalizeToolName } from "./tool-policy.js";
 import { jsonResult } from "./tools/common.js";
+import { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: TypeBox schema type from pi-agent-core uses a different module instance.
 type AnyAgentTool = AgentTool<any, unknown>;
+
+/**
+ * Context passed to tool definitions for hook integration.
+ */
+export type ToolDefinitionContext = {
+  sessionKey?: string;
+  agentId?: string;
+};
 
 function describeToolExecutionError(err: unknown): {
   message: string;
@@ -23,7 +32,10 @@ function describeToolExecutionError(err: unknown): {
   return { message: String(err) };
 }
 
-export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
+export function toToolDefinitions(
+  tools: AnyAgentTool[],
+  ctx?: ToolDefinitionContext,
+): ToolDefinition[] {
   return tools.map((tool) => {
     const name = tool.name || "tool";
     const normalizedName = normalizeToolName(name);
@@ -42,6 +54,44 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
       ): Promise<AgentToolResult<unknown>> => {
         // KNOWN: pi-coding-agent `ToolDefinition.execute` has a different signature/order
         // than pi-agent-core `AgentTool.execute`. This adapter keeps our existing tools intact.
+
+        // Run before_tool_call hooks to allow plugins to intercept/block
+        const hookRunner = getGlobalHookRunner();
+        if (hookRunner?.hasHooks("before_tool_call")) {
+          try {
+            const hookResult = await hookRunner.runBeforeToolCall(
+              {
+                toolName: normalizedName,
+                params: params as Record<string, unknown>,
+              },
+              {
+                agentId: ctx?.agentId,
+                sessionKey: ctx?.sessionKey,
+                toolName: normalizedName,
+              },
+            );
+
+            // If a plugin blocked this tool call, return an error result
+            if (hookResult?.block) {
+              const reason = hookResult.blockReason || "Tool call blocked by plugin";
+              logWarn(`[tools] ${normalizedName} blocked: ${reason}`);
+              return jsonResult({
+                status: "blocked",
+                tool: normalizedName,
+                error: reason,
+              });
+            }
+
+            // If params were modified by the hook, use the modified params
+            if (hookResult?.params) {
+              params = hookResult.params;
+            }
+          } catch (hookErr) {
+            logWarn(`[tools] before_tool_call hook failed: ${String(hookErr)}`);
+            // Continue with execution even if hook fails
+          }
+        }
+
         try {
           return await tool.execute(toolCallId, params, signal, onUpdate);
         } catch (err) {

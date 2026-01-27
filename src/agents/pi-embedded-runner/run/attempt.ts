@@ -435,6 +435,10 @@ export async function runEmbeddedAttempt(
       const { builtInTools, customTools } = splitSdkTools({
         tools,
         sandboxEnabled: !!sandbox?.enabled,
+        ctx: {
+          sessionKey: params.sessionKey,
+          agentId: sessionAgentId,
+        },
       });
 
       // Add client tools (OpenResponses hosted tools) to customTools
