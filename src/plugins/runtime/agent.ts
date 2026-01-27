@@ -60,6 +60,12 @@ export type PluginAgentRunParams = {
    * Agent ID to run. Defaults to the primary agent.
    */
   agentId?: string;
+
+  /**
+   * Additional system prompt content to append to the agent's base system prompt.
+   * Useful for providing task-specific instructions to forked agent runs.
+   */
+  extraSystemPrompt?: string;
 };
 
 export type PluginAgentRunUsage = {
@@ -142,6 +148,7 @@ export async function runPluginAgentTurn(
         timeout: params.timeoutMs ? String(Math.ceil(params.timeoutMs / 1000)) : undefined,
         agentId: params.agentId,
         initialMessages: params.initialMessages,
+        extraSystemPrompt: params.extraSystemPrompt,
         runId,
       },
       defaultRuntime,
