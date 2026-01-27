@@ -62,6 +62,33 @@ export type PluginAgentRunParams = {
   agentId?: string;
 };
 
+export type PluginAgentRunUsage = {
+  /**
+   * Input tokens used.
+   */
+  input?: number;
+
+  /**
+   * Output tokens generated.
+   */
+  output?: number;
+
+  /**
+   * Tokens read from cache.
+   */
+  cacheRead?: number;
+
+  /**
+   * Tokens written to cache.
+   */
+  cacheWrite?: number;
+
+  /**
+   * Total tokens (input + output).
+   */
+  totalTokens?: number;
+};
+
 export type PluginAgentRunResult = {
   /**
    * Whether the run completed successfully.
@@ -82,6 +109,11 @@ export type PluginAgentRunResult = {
    * Agent response text(s).
    */
   responseTexts?: string[];
+
+  /**
+   * Token usage stats for this run.
+   */
+  usage?: PluginAgentRunUsage;
 };
 
 /**
@@ -120,10 +152,23 @@ export async function runPluginAgentTurn(
       ?.filter((p) => typeof p.text === "string" && p.text.length > 0)
       .map((p) => p.text) as string[] | undefined;
 
+    // Extract usage stats from agent meta
+    const agentUsage = result?.meta?.agentMeta?.usage;
+    const usage: PluginAgentRunUsage | undefined = agentUsage
+      ? {
+          input: agentUsage.input,
+          output: agentUsage.output,
+          cacheRead: agentUsage.cacheRead,
+          cacheWrite: agentUsage.cacheWrite,
+          totalTokens: agentUsage.total,
+        }
+      : undefined;
+
     return {
       ok: true,
       runId,
       responseTexts,
+      usage,
     };
   } catch (err) {
     return {
